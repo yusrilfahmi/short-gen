@@ -357,7 +357,7 @@ if st.session_state.get('video_path') or st.session_state.get('video_url'):
             "Potrait (Landscape Blur, Hitam, Putih)",
             "Potrait (9:16 TikTok Mode)",
             "Potrait Left-Right to Up-Bottom",
-            "Potrait Streamer (Berat)",
+            # "Potrait Streamer (Berat)",
             "Potrait Merge 2 Video",
             "Generate Video Overlay"
         ]
@@ -365,7 +365,7 @@ if st.session_state.get('video_path') or st.session_state.get('video_url'):
 
     bg_mode = None
     if crop_mode == "Potrait (Landscape Blur, Hitam, Putih)":
-        bg_mode = st.selectbox("Pilih Background:", ["Blur (Berat)", "Hitam", "Putih"])
+        bg_mode = st.selectbox("Pilih Background:", [ "Hitam", "Putih"]) #"Blur (Berat)" bisa ditambahkan,
 
     # Handle merge mode for URL
     if crop_mode == "Potrait Merge 2 Video":
