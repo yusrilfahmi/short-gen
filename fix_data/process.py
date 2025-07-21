@@ -185,7 +185,7 @@ def manual_cut(video_path, cut_list, crop_mode, bg_mode=None):
                 continue
 
             output_file = f"output/manual_cut_{os.path.basename(video_path)}_{idx+1:03d}.mp4"
-            ffmpeg_cmd = ["ffmpeg", "-y", "-hwaccel", "cuda", "-ss", start, "-i", video_path, "-t", duration]
+            ffmpeg_cmd = ["ffmpeg", "-y", "-hwaccel", "auto", "-ss", start, "-i", video_path, "-t", duration]
 
             # ... (implementasi filter lengkap Anda) ...
 
@@ -218,7 +218,7 @@ def manual_cut_direct(video_url, cut_list, crop_mode, bg_mode=None):
         # Base command untuk direct URL processing
         ffmpeg_cmd = [
             "ffmpeg", "-y",
-            "-hwaccel", "cuda",
+            "-hwaccel", "auto",
             "-ss", start,
             "-i", video_url,  # Langsung menggunakan URL
             "-t", duration
@@ -288,7 +288,7 @@ def manual_cut_direct(video_url, cut_list, crop_mode, bg_mode=None):
         # Tambahkan encoding parameters
         ffmpeg_cmd += [
             "-c:v", "libx264",
-            "-preset", "p1",
+            "-preset", "veryfast",
             "-b:v", "4M",
             "-c:a", "aac", "-b:a", "192k",
             "-reconnect", "1",  # Auto reconnect jika koneksi terputus
@@ -351,12 +351,12 @@ def manual_cut_merge_direct(video_a_source, cut_list_a, video_b_source, cut_list
         status_text.text(f"Memproses Video A - Scene {idx+1}...")
         cmd_a = [
             "ffmpeg", "-y",
-            "-hwaccel", "cuda",
+            "-hwaccel", "auto",
             "-ss", start_a, "-i", video_a_source,
             "-t", duration_a,
             "-vf", "scale=1080:960",
             "-c:v", "libx264",
-            "-preset", "p1",
+            "-preset", "veryfast",
             "-b:v", "4M",
             "-c:a", "aac", "-b:a", "192k"
         ]
@@ -366,19 +366,24 @@ def manual_cut_merge_direct(video_a_source, cut_list_a, video_b_source, cut_list
             cmd_a += ["-reconnect", "1", "-reconnect_at_eof", "1", "-reconnect_streamed", "1"]
         
         cmd_a.append(output_file_a)
-        subprocess.run(cmd_a, capture_output=True, text=True)
+        result_a = subprocess.run(cmd_a, capture_output=True, text=True, encoding='utf-8')
+        if result_a.returncode != 0:
+            st.error(f"❌ Gagal memproses Video A scene {idx+1}. Log FFmpeg:")
+            st.code(result_a.stderr)
+            # Hentikan proses untuk scene ini jika gagal
+            continue 
         progress_bar.progress(0.25)
 
         # Process Video B
         status_text.text(f"Memproses Video B - Scene {idx+1}...")
         cmd_b = [
             "ffmpeg", "-y",
-            "-hwaccel", "cuda",
+            "-hwaccel", "auto",
             "-ss", start_b, "-i", video_b_source,
             "-t", duration_b,
             "-vf", "scale=1080:960",
             "-c:v", "libx264",
-            "-preset", "p1",
+            "-preset", "veryfast",
             "-b:v", "4M",
             "-c:a", "aac", "-b:a", "192k"
         ]
@@ -388,14 +393,18 @@ def manual_cut_merge_direct(video_a_source, cut_list_a, video_b_source, cut_list
             cmd_b += ["-reconnect", "1", "-reconnect_at_eof", "1", "-reconnect_streamed", "1"]
         
         cmd_b.append(output_file_b)
-        subprocess.run(cmd_b, capture_output=True, text=True)
+        result_b = subprocess.run(cmd_b, capture_output=True, text=True, encoding='utf-8')
+        if result_b.returncode != 0:
+            st.error(f"❌ Gagal memproses Video B scene {idx+1}. Log FFmpeg:")
+            st.code(result_b.stderr)
+            continue
         progress_bar.progress(0.5)
 
         # Merge videos
         status_text.text(f"Menggabungkan Video A & B - Scene {idx+1}...")
         merge_cmd = [
             "ffmpeg", "-y",
-            "-hwaccel", "cuda",
+            "-hwaccel", "auto",
             "-i", output_file_a,
             "-i", output_file_b,
             "-filter_complex",
@@ -403,12 +412,16 @@ def manual_cut_merge_direct(video_a_source, cut_list_a, video_b_source, cut_list
             "-map", "[out]",
             "-map", "0:a?",
             "-c:v", "libx264",
-            "-preset", "p1",
+            "-preset", "veryfast",
             "-b:v", "4M",
             "-c:a", "aac", "-b:a", "192k",
             final_output
         ]
-        subprocess.run(merge_cmd, capture_output=True, text=True)
+        result_merge = subprocess.run(merge_cmd, capture_output=True, text=True, encoding='utf-8')
+        if result_merge.returncode != 0:
+            st.error(f"❌ Gagal menggabungkan video scene {idx+1}. Log FFmpeg:")
+            st.code(result_merge.stderr)
+            continue
         progress_bar.progress(0.9)
 
         # Cleanup temp files
@@ -450,9 +463,9 @@ def overlay_to_laptop_direct(background_path, video_url, cuts):
         # Cut video dari URL
         status_text.text(f"Memotong video dari URL - Scene {idx+1}...")
         cut_cmd = [
-            "ffmpeg", "-y", "-hwaccel", "cuda", "-ss", start, "-i", video_url, "-t", duration,
+            "ffmpeg", "-y", "-hwaccel", "auto", "-ss", start, "-i", video_url, "-t", duration,
             "-c:v", "libx264",
-            "-preset", "p1",
+            "-preset", "veryfast",
             "-b:v", "4M",
             "-c:a", "aac", "-b:a", "192k",
             "-reconnect", "1",
@@ -471,9 +484,9 @@ def overlay_to_laptop_direct(background_path, video_url, cuts):
         vf_filter = scale_filter + overlay_filter
 
         overlay_cmd = [
-            "ffmpeg", "-y", "-hwaccel", "cuda", "-i", background_path, "-i", cut_file,
+            "ffmpeg", "-y", "-hwaccel", "auto", "-i", background_path, "-i", cut_file,
             "-filter_complex", vf_filter,
-            "-c:v", "libx264", "-preset", "p1", "-b:v", "4M",
+            "-c:v", "libx264", "-preset", "veryfast", "-b:v", "4M",
             "-pix_fmt", "yuv420p", overlay_file
         ]
         result_overlay = subprocess.run(overlay_cmd, capture_output=True, text=True)
@@ -514,7 +527,7 @@ def generate_preview_from_url(video_url, cut):
         "-i", video_url,
         "-t", duration,
         "-vf", "scale=640:360",  # Resolusi kecil untuk preview cepat
-        "-c:v", "libx264", "-preset", "ultrafast", "-crf", "28",
+        "-c:v", "libx264", "-preset", "veryfast", "-crf", "28",
         "-c:a", "aac", "-b:a", "64k",
         "-reconnect", "1",
         "-reconnect_at_eof", "1",
@@ -555,7 +568,7 @@ def manual_cut(video_path, cut_list, crop_mode, bg_mode=None):
 
         ffmpeg_cmd = [
             "ffmpeg", "-y",
-            "-hwaccel", "cuda",
+            "-hwaccel", "auto",
             "-ss", start,
             "-i", video_path,
             "-t", duration
@@ -624,7 +637,7 @@ def manual_cut(video_path, cut_list, crop_mode, bg_mode=None):
 
         ffmpeg_cmd += [
             "-c:v", "libx264",
-            "-preset", "p1",
+            "-preset", "veryfast",
             "-b:v", "4M",
             "-c:a", "aac", "-b:a", "192k",
             output_file
@@ -667,35 +680,44 @@ def manual_cut_merge(video_a_path, cut_list_a, video_b_path, cut_list_b):
 
         cmd_a = [
             "ffmpeg", "-y",
-            "-hwaccel", "cuda",
+            "-hwaccel", "auto",
             "-ss", start_a, "-i", video_a_path,
             "-t", duration_a,
             "-vf", "scale=1080:960",
             "-c:v", "libx264",
-            "-preset", "p1",
+            "-preset", "veryfast",
             "-b:v", "4M",
             "-c:a", "aac", "-b:a", "192k",
             output_file_a
         ]
-        subprocess.run(cmd_a, capture_output=True, text=True)
+        result_a = subprocess.run(cmd_a, capture_output=True, text=True, encoding='utf-8')
+        if result_a.returncode != 0:
+            st.error(f"❌ Gagal memproses Video A scene {idx+1}. Log FFmpeg:")
+            st.code(result_a.stderr)
+            # Hentikan proses untuk scene ini jika gagal
+            continue 
 
         cmd_b = [
             "ffmpeg", "-y",
-            "-hwaccel", "cuda",
+            "-hwaccel", "auto",
             "-ss", start_b, "-i", video_b_path,
             "-t", duration_b,
             "-vf", "scale=1080:960",
             "-c:v", "libx264",
-            "-preset", "p1",
+            "-preset", "veryfast",
             "-b:v", "4M",
             "-c:a", "aac", "-b:a", "192k",
             output_file_b
         ]
-        subprocess.run(cmd_b, capture_output=True, text=True)
+        result_b = subprocess.run(cmd_b, capture_output=True, text=True, encoding='utf-8')
+        if result_b.returncode != 0:
+            st.error(f"❌ Gagal memproses Video B scene {idx+1}. Log FFmpeg:")
+            st.code(result_b.stderr)
+            continue
 
         merge_cmd = [
             "ffmpeg", "-y",
-            "-hwaccel", "cuda",
+            "-hwaccel", "auto",
             "-i", output_file_a,
             "-i", output_file_b,
             "-filter_complex",
@@ -703,12 +725,16 @@ def manual_cut_merge(video_a_path, cut_list_a, video_b_path, cut_list_b):
             "-map", "[out]",
             "-map", "0:a?",
             "-c:v", "libx264",
-            "-preset", "p1",
+            "-preset", "veryfast",
             "-b:v", "4M",
             "-c:a", "aac", "-b:a", "192k",
             final_output
         ]
-        subprocess.run(merge_cmd, capture_output=True, text=True)
+        result_merge = subprocess.run(merge_cmd, capture_output=True, text=True, encoding='utf-8')
+        if result_merge.returncode != 0:
+            st.error(f"❌ Gagal menggabungkan video scene {idx+1}. Log FFmpeg:")
+            st.code(result_merge.stderr)
+            continue
 
         if os.path.exists(output_file_a):
             os.remove(output_file_a)
@@ -737,9 +763,9 @@ def overlay_to_laptop(background_path, video_path, cuts):
 
         cut_file = f"output/tmp_cut_{idx+1:03d}.mp4"
         cut_cmd = [
-            "ffmpeg", "-y", "-hwaccel", "cuda", "-ss", start, "-i", video_path, "-t", duration,
+            "ffmpeg", "-y", "-hwaccel", "auto", "-ss", start, "-i", video_path, "-t", duration,
             "-c:v", "libx264",
-            "-preset", "p1",
+            "-preset", "veryfast",
             "-b:v", "4M",
             "-c:a", "aac", "-b:a", "192k", cut_file
         ]
@@ -751,9 +777,9 @@ def overlay_to_laptop(background_path, video_path, cuts):
         vf_filter = scale_filter + overlay_filter
 
         overlay_cmd = [
-            "ffmpeg", "-y", "-hwaccel", "cuda", "-i", background_path, "-i", cut_file,
+            "ffmpeg", "-y", "-hwaccel", "auto", "-i", background_path, "-i", cut_file,
             "-filter_complex", vf_filter,
-            "-c:v", "libx264", "-preset", "p1", "-b:v", "4M",
+            "-c:v", "libx264", "-preset", "veryfast", "-b:v", "4M",
             "-pix_fmt", "yuv420p", overlay_file
         ]
         result_overlay = subprocess.run(overlay_cmd, capture_output=True, text=True)
@@ -783,7 +809,7 @@ def generate_preview(video_path, cut):
 
     ffmpeg_cmd = [
         "ffmpeg", "-y",
-        "-hwaccel", "cuda",
+        "-hwaccel", "auto",
         "-ss", start,
         "-i", video_path,
         "-t", duration,
@@ -798,11 +824,11 @@ def generate_preview(video_path, cut):
         st.error("Gagal membuat preview. Mencoba ulang dengan re-encoding...")
         ffmpeg_cmd_recode = [
             "ffmpeg", "-y",
-            "-hwaccel", "cuda",
+            "-hwaccel", "auto",
             "-ss", start,
             "-i", video_path,
             "-t", duration,
-            "-c:v", "libx264", "-preset", "ultrafast",
+            "-c:v", "libx264", "-preset", "veryfast",
             "-c:a", "aac",
             preview_file
         ]
