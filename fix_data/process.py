@@ -149,7 +149,7 @@ def manual_cut_merge_auto(video_a_source, cut_list_a, video_b_source, is_url_a=F
 
         # 3. Gabungkan Video A dan B
         status_text.text(f"Menggabungkan Video A & B - Scene {idx+1}...")
-        merge_cmd = ["ffmpeg", "-y", "-hwaccel", "auto", "-i", output_file_a, "-i", output_file_b, "-filter_complex", "[0:v]settb=AVTB[v0];[1:v]settb=AVTB[v1];[v0][v1]vstack=inputs=2[out]", "-map", "[out]", "-map", "0:a?", "-c:v", "libx264", "-preset", "veryfast", "-b:v", "6M", "-c:a", "copy", final_output]
+        merge_cmd = ["ffmpeg", "-y", "-i", output_file_a, "-i", output_file_b, "-filter_complex", "[0:v]settb=AVTB[v0];[1:v]settb=AVTB[v1];[v0][v1]vstack=inputs=2[out]", "-map", "[out]", "-map", "0:a?", "-c:v", "libx264", "-preset", "veryfast", "-b:v", "6M", "-c:a", "copy", final_output]
         result_merge = subprocess.run(merge_cmd, capture_output=True, text=True, encoding='utf-8')
         progress_bar.progress(0.9)
 
