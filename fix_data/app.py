@@ -47,6 +47,7 @@ def is_youtube_url(url):
         r'(?:https?://)?(?:www\.)?youtu\.be/[\w-]+',
         r'(?:https?://)?(?:www\.)?youtube\.com/embed/[\w-]+',
         r'(?:https?://)?(?:www\.)?youtube\.com/shorts/[\w-]+',
+        r'(?:https?://)?(?:www\.)?youtube\.com/live/[\w-]+',
     ]
     return any(re.match(pattern, url) for pattern in youtube_patterns)
 
