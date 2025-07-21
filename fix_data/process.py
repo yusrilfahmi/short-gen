@@ -287,7 +287,7 @@ def manual_cut_direct(video_url, cut_list, crop_mode, bg_mode=None):
 
         # Tambahkan encoding parameters
         ffmpeg_cmd += [
-            "-c:v", "h264_nvenc",
+            "-c:v", "libx264",
             "-preset", "p1",
             "-b:v", "4M",
             "-c:a", "aac", "-b:a", "192k",
@@ -355,7 +355,7 @@ def manual_cut_merge_direct(video_a_source, cut_list_a, video_b_source, cut_list
             "-ss", start_a, "-i", video_a_source,
             "-t", duration_a,
             "-vf", "scale=1080:960",
-            "-c:v", "h264_nvenc",
+            "-c:v", "libx264",
             "-preset", "p1",
             "-b:v", "4M",
             "-c:a", "aac", "-b:a", "192k"
@@ -377,7 +377,7 @@ def manual_cut_merge_direct(video_a_source, cut_list_a, video_b_source, cut_list
             "-ss", start_b, "-i", video_b_source,
             "-t", duration_b,
             "-vf", "scale=1080:960",
-            "-c:v", "h264_nvenc",
+            "-c:v", "libx264",
             "-preset", "p1",
             "-b:v", "4M",
             "-c:a", "aac", "-b:a", "192k"
@@ -402,7 +402,7 @@ def manual_cut_merge_direct(video_a_source, cut_list_a, video_b_source, cut_list
             "[0:v]scale=1080:960[up];[1:v]scale=1080:960[down];[up][down]vstack=inputs=2[out]",
             "-map", "[out]",
             "-map", "0:a?",
-            "-c:v", "h264_nvenc",
+            "-c:v", "libx264",
             "-preset", "p1",
             "-b:v", "4M",
             "-c:a", "aac", "-b:a", "192k",
@@ -451,7 +451,7 @@ def overlay_to_laptop_direct(background_path, video_url, cuts):
         status_text.text(f"Memotong video dari URL - Scene {idx+1}...")
         cut_cmd = [
             "ffmpeg", "-y", "-hwaccel", "cuda", "-ss", start, "-i", video_url, "-t", duration,
-            "-c:v", "h264_nvenc",
+            "-c:v", "libx264",
             "-preset", "p1",
             "-b:v", "4M",
             "-c:a", "aac", "-b:a", "192k",
@@ -473,7 +473,7 @@ def overlay_to_laptop_direct(background_path, video_url, cuts):
         overlay_cmd = [
             "ffmpeg", "-y", "-hwaccel", "cuda", "-i", background_path, "-i", cut_file,
             "-filter_complex", vf_filter,
-            "-c:v", "h264_nvenc", "-preset", "p1", "-b:v", "4M",
+            "-c:v", "libx264", "-preset", "p1", "-b:v", "4M",
             "-pix_fmt", "yuv420p", overlay_file
         ]
         result_overlay = subprocess.run(overlay_cmd, capture_output=True, text=True)
@@ -623,7 +623,7 @@ def manual_cut(video_path, cut_list, crop_mode, bg_mode=None):
             ]
 
         ffmpeg_cmd += [
-            "-c:v", "h264_nvenc",
+            "-c:v", "libx264",
             "-preset", "p1",
             "-b:v", "4M",
             "-c:a", "aac", "-b:a", "192k",
@@ -671,7 +671,7 @@ def manual_cut_merge(video_a_path, cut_list_a, video_b_path, cut_list_b):
             "-ss", start_a, "-i", video_a_path,
             "-t", duration_a,
             "-vf", "scale=1080:960",
-            "-c:v", "h264_nvenc",
+            "-c:v", "libx264",
             "-preset", "p1",
             "-b:v", "4M",
             "-c:a", "aac", "-b:a", "192k",
@@ -685,7 +685,7 @@ def manual_cut_merge(video_a_path, cut_list_a, video_b_path, cut_list_b):
             "-ss", start_b, "-i", video_b_path,
             "-t", duration_b,
             "-vf", "scale=1080:960",
-            "-c:v", "h264_nvenc",
+            "-c:v", "libx264",
             "-preset", "p1",
             "-b:v", "4M",
             "-c:a", "aac", "-b:a", "192k",
@@ -702,7 +702,7 @@ def manual_cut_merge(video_a_path, cut_list_a, video_b_path, cut_list_b):
             "[0:v]scale=1080:960[up];[1:v]scale=1080:960[down];[up][down]vstack=inputs=2[out]",
             "-map", "[out]",
             "-map", "0:a?",
-            "-c:v", "h264_nvenc",
+            "-c:v", "libx264",
             "-preset", "p1",
             "-b:v", "4M",
             "-c:a", "aac", "-b:a", "192k",
@@ -738,7 +738,7 @@ def overlay_to_laptop(background_path, video_path, cuts):
         cut_file = f"output/tmp_cut_{idx+1:03d}.mp4"
         cut_cmd = [
             "ffmpeg", "-y", "-hwaccel", "cuda", "-ss", start, "-i", video_path, "-t", duration,
-            "-c:v", "h264_nvenc",
+            "-c:v", "libx264",
             "-preset", "p1",
             "-b:v", "4M",
             "-c:a", "aac", "-b:a", "192k", cut_file
@@ -753,7 +753,7 @@ def overlay_to_laptop(background_path, video_path, cuts):
         overlay_cmd = [
             "ffmpeg", "-y", "-hwaccel", "cuda", "-i", background_path, "-i", cut_file,
             "-filter_complex", vf_filter,
-            "-c:v", "h264_nvenc", "-preset", "p1", "-b:v", "4M",
+            "-c:v", "libx264", "-preset", "p1", "-b:v", "4M",
             "-pix_fmt", "yuv420p", overlay_file
         ]
         result_overlay = subprocess.run(overlay_cmd, capture_output=True, text=True)
