@@ -124,7 +124,7 @@ def manual_cut_merge_auto(video_a_source, cut_list_a, video_b_source, is_url_a=F
 
         # 1. Proses Potong Video A
         status_text.text(f"Memproses Video A - Scene {idx+1}...")
-        cmd_a = ["ffmpeg", "-y", "-hwaccel", "cuda", "-ss", start_a_ts, "-i", video_a_source, "-t", str(duration_a_seconds), "-vf", "scale=1080:960,setsar=1", "-c:v", "h264_nvenc", "-preset", "p1", "-b:v", "4M", "-c:a", "aac", "-b:a", "192k"]
+        cmd_a = ["ffmpeg", "-y", "-hwaccel", "auto", "-ss", start_a_ts, "-i", video_a_source, "-t", str(duration_a_seconds), "-vf", "scale=1080:960,setsar=1", "-c:v", "libx264", "-preset", "veryfast", "-b:v", "4M", "-c:a", "aac", "-b:a", "192k"]
         if is_url_a: cmd_a.extend(["-reconnect", "1", "-reconnect_at_eof", "1", "-reconnect_streamed", "1", "-reconnect_delay_max", "5"])
         cmd_a.append(output_file_a)
         result_a = subprocess.run(cmd_a, capture_output=True, text=True, encoding='utf-8')
@@ -136,7 +136,7 @@ def manual_cut_merge_auto(video_a_source, cut_list_a, video_b_source, is_url_a=F
 
         # 2. Proses Potong Video B
         status_text.text(f"Memproses Video B - Scene {idx+1}...")
-        cmd_b = ["ffmpeg", "-y", "-hwaccel", "cuda", "-ss", start_b_ts, "-i", video_b_source, "-t", str(clip_duration_b), "-vf", "scale=1080:960,setsar=1", "-an", "-c:v", "h264_nvenc", "-preset", "p1", "-b:v", "4M"]
+        cmd_b = ["ffmpeg", "-y", "-hwaccel", "auto", "-ss", start_b_ts, "-i", video_b_source, "-t", str(clip_duration_b), "-vf", "scale=1080:960,setsar=1", "-an", "-c:v", "libx264", "-preset", "veryfast", "-b:v", "4M"]
         if is_url_b: cmd_b.extend(["-reconnect", "1", "-reconnect_at_eof", "1", "-reconnect_streamed", "1", "-reconnect_delay_max", "5"])
         cmd_b.append(output_file_b)
         result_b = subprocess.run(cmd_b, capture_output=True, text=True, encoding='utf-8')
@@ -149,7 +149,7 @@ def manual_cut_merge_auto(video_a_source, cut_list_a, video_b_source, is_url_a=F
 
         # 3. Gabungkan Video A dan B
         status_text.text(f"Menggabungkan Video A & B - Scene {idx+1}...")
-        merge_cmd = ["ffmpeg", "-y", "-hwaccel", "cuda", "-i", output_file_a, "-i", output_file_b, "-filter_complex", "[0:v]settb=AVTB[v0];[1:v]settb=AVTB[v1];[v0][v1]vstack=inputs=2[out]", "-map", "[out]", "-map", "0:a?", "-c:v", "h264_nvenc", "-preset", "p1", "-b:v", "6M", "-c:a", "copy", final_output]
+        merge_cmd = ["ffmpeg", "-y", "-hwaccel", "auto", "-i", output_file_a, "-i", output_file_b, "-filter_complex", "[0:v]settb=AVTB[v0];[1:v]settb=AVTB[v1];[v0][v1]vstack=inputs=2[out]", "-map", "[out]", "-map", "0:a?", "-c:v", "libx264", "-preset", "veryfast", "-b:v", "6M", "-c:a", "copy", final_output]
         result_merge = subprocess.run(merge_cmd, capture_output=True, text=True, encoding='utf-8')
         progress_bar.progress(0.9)
 

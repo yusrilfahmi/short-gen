@@ -7,6 +7,20 @@ import tempfile
 from urllib.parse import urlparse
 import yt_dlp
 import re
+import shutil # <--- TAMBAHKAN IMPORT INI
+
+# Daftar folder yang akan dibersihkan
+if 'initialized' not in st.session_state:
+    # Daftar folder yang akan dibersihkan
+    FOLDERS_TO_CLEAR = ["output", "uploads", "previews"]
+
+    for folder in FOLDERS_TO_CLEAR:
+        if os.path.exists(folder):
+            shutil.rmtree(folder)
+        os.makedirs(folder, exist_ok=True)
+    
+    # Tandai bahwa sesi ini sudah diinisialisasi agar kode ini tidak berjalan lagi
+    st.session_state['initialized'] = True
 
 st.title("🎬 AI Short Generator")
 
@@ -23,6 +37,8 @@ if 'video_b_url' not in st.session_state:
     st.session_state['video_b_url'] = None
 if 'cuts_b' not in st.session_state:
     st.session_state['cuts_b'] = [{'start': '00:00:00:000', 'end': '00:00:00:000'}]
+if 'merge_mode' not in st.session_state:
+    st.session_state['merge_mode'] = 'Manual'
 
 def is_youtube_url(url):
     """Check if URL is from YouTube"""
@@ -355,6 +371,14 @@ if st.session_state.get('video_path') or st.session_state.get('video_url'):
     if crop_mode == "Potrait Merge 2 Video":
         st.subheader("🎬 Video Kedua untuk Merge")
         
+        # Pilihan mode merge
+        st.session_state['merge_mode'] = st.radio(
+            "Pilih Mode Merge:",
+            ["Manual", "Otomatis"],
+            horizontal=True,
+            help="Manual: Tentukan timestamp sendiri | Otomatis: Auto-generate clips berdasarkan durasi video pertama"
+        )
+        
         input_method_b = st.radio(
             "Pilih metode input video kedua:",
             ["📁 Upload File", "🌐 URL Video (Direct)", "🌐 Download dari URL"],
@@ -387,6 +411,12 @@ if st.session_state.get('video_path') or st.session_state.get('video_url'):
                             st.session_state['video_b_url'] = direct_url_b
                             st.session_state['video_b_path'] = None
                             st.success(f"✅ URL video kedua siap!")
+                            st.info(f"📹 **Judul Video B:** {title_b}")
+                            if duration_b:
+                                hours_b = duration_b // 3600
+                                minutes_b = (duration_b % 3600) // 60
+                                seconds_b = duration_b % 60
+                                st.info(f"⏱️ **Durasi Video B:** {hours_b:02d}:{minutes_b:02d}:{seconds_b:02d}")
                         else:
                             st.error(f"❌ Gagal: {error}")
                     else:
@@ -398,8 +428,29 @@ if st.session_state.get('video_path') or st.session_state.get('video_url'):
                         else:
                             st.error("❌ URL tidak valid")
 
-        # Cuts untuk video kedua
-        if st.session_state.get('video_b_path') or st.session_state.get('video_b_url'):
+        # Auto mode settings
+        if st.session_state['merge_mode'] == "Otomatis" and (st.session_state.get('video_b_path') or st.session_state.get('video_b_url')):
+            st.subheader("⚙️ Pengaturan Mode Otomatis")
+            
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.write("🎬 **Video Kedua (Bawah) - Pengaturan Waktu**")
+                video_b_start = st.text_input(
+                    "Start dari detik ke (HH:MM:SS):", 
+                    value="00:00:00",
+                    help="Mulai dari detik berapa untuk menghindari intro/iklan"
+                )
+                video_b_end = st.text_input(
+                    "End sampai detik (HH:MM:SS) - kosong = sampai akhir:", 
+                    value="",
+                    help="Akhiri di detik berapa untuk menghindari outro/iklan. Kosongkan jika sampai akhir video"
+                )
+            
+            st.info("💡 **Mode Otomatis:** Sistem akan auto-generate clips dari Video B berdasarkan durasi setiap scene di Video A")
+        
+        # Manual mode - Cuts untuk video kedua
+        elif st.session_state['merge_mode'] == "Manual" and (st.session_state.get('video_b_path') or st.session_state.get('video_b_url')):
             st.subheader("🎯 Tentukan Potongan Video Kedua (Bawah)")
             
             for i, cut_b in enumerate(st.session_state['cuts_b']):
@@ -423,14 +474,27 @@ if st.session_state.get('video_path') or st.session_state.get('video_url'):
                     video_a_source = st.session_state.get('video_path') or st.session_state.get('video_url')
                     video_b_source = st.session_state.get('video_b_path') or st.session_state.get('video_b_url')
                     
-                    process.manual_cut_merge_direct(
-                        video_a_source,
-                        st.session_state['cuts'],
-                        video_b_source,
-                        st.session_state['cuts_b'],
-                        is_url_a=st.session_state.get('video_url') is not None,
-                        is_url_b=st.session_state.get('video_b_url') is not None
-                    )
+                    if st.session_state['merge_mode'] == "Otomatis":
+                        # Mode otomatis
+                        process.manual_cut_merge_auto(
+                            video_a_source,
+                            st.session_state['cuts'],
+                            video_b_source,
+                            is_url_a=st.session_state.get('video_url') is not None,
+                            is_url_b=st.session_state.get('video_b_url') is not None,
+                            video_b_start=video_b_start,
+                            video_b_end=video_b_end if video_b_end else None
+                        )
+                    else:
+                        # Mode manual
+                        process.manual_cut_merge_direct(
+                            video_a_source,
+                            st.session_state['cuts'],
+                            video_b_source,
+                            st.session_state['cuts_b'],
+                            is_url_a=st.session_state.get('video_url') is not None,
+                            is_url_b=st.session_state.get('video_b_url') is not None
+                        )
                 
                 elif crop_mode == "Generate Video Overlay":
                     background_path = "background_1080x1920.png"
@@ -455,12 +519,33 @@ if st.session_state.get('video_path') or st.session_state.get('video_url'):
                             bg_mode=bg_mode
                         )
     
-    with col2:
-        if st.button("📂 Buka Folder Output"):
-            output_path = os.path.abspath("output")
-            subprocess.Popen(f'explorer "{output_path}"')
+    # with col2:
+    #     if st.button("📂 Buka Folder Output"):
+    #         output_path = os.path.abspath("output")
+    #         subprocess.Popen(f'explorer "{output_path}"')
 
-    with col3:
-        if st.button("📂 Buka Folder Uploads"):
-            folder_path = os.path.abspath("uploads")
-            subprocess.Popen(f'explorer "{folder_path}"')
+    # with col3:
+    #     if st.button("📂 Buka Folder Uploads"):
+    #         folder_path = os.path.abspath("uploads")
+    #         subprocess.Popen(f'explorer "{folder_path}"')
+
+output_dir = "output"
+
+# Tampilkan seluruh bagian ini HANYA JIKA folder 'output' ada dan berisi file
+if os.path.exists(output_dir) and len(os.listdir(output_dir)) > 0:
+    
+    st.subheader("📁 File Hasil") # Judul sekarang hanya muncul jika ada file
+    
+    # Urutkan file agar tampil rapi
+    for filename in sorted(os.listdir(output_dir)):
+        file_path = os.path.join(output_dir, filename)
+        if os.path.isfile(file_path):
+            st.write(f"✅ **{filename}**")
+            with open(file_path, "rb") as f:
+                st.download_button(
+                    label="⬇️ Download Video Ini",
+                    data=f,
+                    file_name=filename,
+                    mime="video/mp4"
+                )
+            st.divider()
